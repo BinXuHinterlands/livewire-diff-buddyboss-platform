@@ -334,8 +334,14 @@ function bp_nouveau_activity_state() {
  * @param array $args See bp_nouveau_wrapper() for the description of parameters.
  */
 function bb_nouveau_activity_inner_buttons( $args = array() ) {
-
-	$output = join( ' ', bb_nouveau_get_activity_inner_buttons( $args ) );
+	$buttons = bb_nouveau_get_activity_inner_buttons( $args );
+	
+	// If buttons is not an array or empty, don't proceed with join
+	if ( !is_array($buttons) || empty($buttons) ) {
+		$output = '';
+	} else {
+		$output = join( ' ', $buttons );
+	}
 
 	ob_start();
 
@@ -423,7 +429,14 @@ function bb_nouveau_get_activity_inner_buttons( $args ) {
  * @param array $args See bp_nouveau_wrapper() for the description of parameters.
  */
 function bp_nouveau_activity_entry_buttons( $args = array() ) {
-	$output = join( ' ', bp_nouveau_get_activity_entry_buttons( $args ) );
+	$buttons = bp_nouveau_get_activity_entry_buttons( $args );
+	
+	// If buttons is not an array or empty, don't proceed with join
+	if ( !is_array($buttons) || empty($buttons) ) {
+		$output = '';
+	} else {
+		$output = join( ' ', $buttons );
+	}
 
 	ob_start();
 
@@ -873,7 +886,14 @@ function bp_nouveau_activity_comment_form() {
  * @param array $args Optional. See bp_nouveau_wrapper() for the description of parameters.
  */
 function bp_nouveau_activity_comment_buttons( $args = array() ) {
-	$output = join( ' ', bp_nouveau_get_activity_comment_buttons( $args ) );
+	$buttons = bp_nouveau_get_activity_comment_buttons( $args );
+	
+	// If buttons is not an array or empty, don't proceed with join
+	if ( !is_array($buttons) || empty($buttons) ) {
+		$output = '';
+	} else {
+		$output = join( ' ', $buttons );
+	}
 
 	ob_start();
 	/**
@@ -1663,19 +1683,7 @@ function bp_nouveau_edit_activity_data() {
  * @return string The Activity edit data.
  */
 function bp_nouveau_get_edit_activity_data() {
-	$edit_data = bp_activity_get_edit_data( bp_get_activity_id() );
-	
-	// Ensure that when the user is not logged in, an empty object is returned instead of an array
-	if ( ! is_user_logged_in() ) {
-		$edit_data = array();
-	}
-	
-	// Ensure that valid JSON data is returned
-	if ( $edit_data === false || ! is_array( $edit_data ) ) {
-		$edit_data = array();
-	}
-	
-	return htmlentities( wp_json_encode( $edit_data ), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401 );
+	return htmlentities( wp_json_encode( bp_activity_get_edit_data( bp_get_activity_id() ) ), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401 );
 }
 
 /**
@@ -1686,54 +1694,58 @@ function bp_nouveau_get_edit_activity_data() {
  * @param array $args See bp_nouveau_wrapper() for the description of parameters.
  */
 function bb_nouveau_activity_entry_bubble_buttons( $args = array() ) {
-	$buttons = bb_nouveau_get_activity_entry_bubble_buttons( $args );
-	
-	// If there is no button or the user is not logged in, do not display more options
-	if ( empty( $buttons ) ) {
-		return;
-	}
-	
-	$output = join( ' ', $buttons );
+    $buttons = bb_nouveau_get_activity_entry_bubble_buttons( $args );
+    
+    // If $buttons is not an array or empty, do not output
+    if ( !is_array($buttons) || empty($buttons) ) {
+        return;
+    }
+    
+    // Render each button array to HTML string
+    $buttons = array_filter($buttons, 'is_string');
 
-	ob_start();
+    // Remove empty strings
+    $output = join( ' ', $buttons );
 
-	/**
-	 * Fires at the end of the activity entry top meta data area.
-	 *
-	 * @since BuddyBoss 1.7.2
-	 */
-	do_action( 'bp_activity_entry_top_meta' );
+    ob_start();
 
-	$output .= ob_get_clean();
+    /**
+     * Fires at the end of the activity entry top meta data area.
+     *
+     * @since BuddyBoss 1.7.2
+     */
+    do_action( 'bp_activity_entry_top_meta' );
 
-	$has_content = trim( $output, ' ' );
-	if ( ! $has_content ) {
-		return;
-	}
+    $output .= ob_get_clean();
 
-	if ( ! $args ) {
-		$args = array( 'container_classes' => array( 'bb-activity-more-options-wrap' ) );
-	}
+    $has_content = trim( $output, ' ' );
+    if ( ! $has_content ) {
+        return;
+    }
 
-	ob_start();
-	bp_get_template_part( 'common/more-options-view' );
-	$template_part_content = ob_get_clean();
+    if ( ! $args ) {
+        $args = array( 'container_classes' => array( 'bb-activity-more-options-wrap' ) );
+    }
 
-	$output = sprintf(
-		'<span class="bb-activity-more-options-action" data-balloon-pos="up" data-balloon="%1$s">
-		<i class="bb-icon-f bb-icon-ellipsis-h"></i>
-		</span>
-		<div class="bb-activity-more-options bb_more_dropdown">
-			%2$s
-			%3$s
-		</div>
-		<div class="bb_more_dropdown_overlay"></div>',
-		esc_html__( 'More Options', 'buddyboss' ),
-		$template_part_content,
-		$output
-	);
+    ob_start();
+    bp_get_template_part( 'common/more-options-view' );
+    $template_part_content = ob_get_clean();
 
-	bp_nouveau_wrapper( array_merge( $args, array( 'output' => $output ) ) );
+    $output = sprintf(
+        '<span class="bb-activity-more-options-action" data-balloon-pos="up" data-balloon="%1$s">
+        <i class="bb-icon-f bb-icon-ellipsis-h"></i>
+        </span>
+        <div class="bb-activity-more-options bb_more_dropdown">
+            %2$s
+            %3$s
+        </div>
+        <div class="bb_more_dropdown_overlay"></div>',
+        esc_html__( 'More Options', 'buddyboss' ),
+        $template_part_content,
+        $output
+    );
+
+    bp_nouveau_wrapper( array_merge( $args, array( 'output' => $output ) ) );
 }
 
 /**
@@ -1746,11 +1758,6 @@ function bb_nouveau_activity_entry_bubble_buttons( $args = array() ) {
 function bb_nouveau_get_activity_entry_bubble_buttons( $args ) {
 	$buttons = array();
 	if ( ! isset( $GLOBALS['activities_template'] ) ) {
-		return $buttons;
-	}
-
-	// Do not display any buttons for users who are not logged in
-	if ( ! is_user_logged_in() ) {
 		return $buttons;
 	}
 
@@ -2256,8 +2263,8 @@ function bb_nouveau_get_activity_entry_bubble_buttons( $args ) {
 function bb_nouveau_activity_comment_bubble_buttons( $args = array() ) {
 	$buttons = bb_nouveau_get_activity_comment_bubble_buttons( $args );
 	
-	// If there is no button or the user is not logged in, do not display more options
-	if ( empty( $buttons ) ) {
+	// If buttons is not an array or empty, don't proceed
+	if ( !is_array($buttons) || empty($buttons) ) {
 		return;
 	}
 	
@@ -2317,11 +2324,6 @@ function bb_nouveau_get_activity_comment_bubble_buttons( $args ) {
 	$buttons = array();
 
 	if ( ! isset( $GLOBALS['activities_template'] ) ) {
-		return $buttons;
-	}
-	
-	// Do not display any buttons for users who are not logged in
-	if ( ! is_user_logged_in() ) {
 		return $buttons;
 	}
 
